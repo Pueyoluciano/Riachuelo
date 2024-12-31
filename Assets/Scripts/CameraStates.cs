@@ -1,4 +1,4 @@
-public enum CameraStates
+public enum Screens
 {
     Perspective,
     TakingPicture
