@@ -4,6 +4,14 @@ using UnityEngine;
 
 public abstract class UIScreen : MonoBehaviour
 {
+    private Screens nextScreen;
+
+    public Screens NextScreen { get => nextScreen; set => nextScreen = value; }
+
+    private void Awake()
+    {
+        nextScreen = Screens.NoScreen;
+    }
     public abstract void Init();
     public virtual void Enable()
     {
@@ -12,11 +20,13 @@ public abstract class UIScreen : MonoBehaviour
     public virtual void Disable()
     {
         gameObject.SetActive(false);
+        nextScreen = Screens.NoScreen;
     }
 
     public abstract void GetInput();
-    public virtual void Execute()
+    public virtual Screens Execute()
     {
         GetInput();
+        return nextScreen;
     }
 }

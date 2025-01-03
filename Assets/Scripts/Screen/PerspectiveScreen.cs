@@ -13,6 +13,8 @@ public class PerspectiveScreen : UIScreen
     [SerializeField] float fadeInDuration;
     [SerializeField] float fadeOutDuration;
 
+    public Sprite GetCurrentPerspective { get => locationData.perspectivesList[currentPerspective]; }
+
     CanvasGroup canvasGroup;
     int currentPerspective;
     bool isFading;
@@ -34,6 +36,11 @@ public class PerspectiveScreen : UIScreen
         if (!isFading && Input.GetKeyDown(KeyCode.RightArrow))
         {
             NextPerspective();
+        }
+
+        if(!isFading && Input.GetKeyDown(KeyCode.P))
+        {
+            NextScreen = Screens.TakingPicture;
         }
     }
 
