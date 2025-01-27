@@ -1,64 +1,75 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class PerspectiveScreen : UIScreen
 {
-    [Header("Perspective")]
-    [SerializeField] Image perspective;
-    [SerializeField] LocationData locationData;
+    [Header("Location")]
+    [SerializeField] Location initialLocation;
+    [SerializeField] TextMeshProUGUI locationNameText;
+    [SerializeField] DirectionsHUD directionsHUD;
 
     [Header("Fade In/Out")]
     [SerializeField] float fadeInDuration;
     [SerializeField] float fadeOutDuration;
 
-    public Sprite GetCurrentPerspective { get => locationData.perspectivesList[currentPerspective]; }
+    public Location GetCurrentLocation {  get => currentLocation;  }
 
     CanvasGroup canvasGroup;
-    int currentPerspective;
     bool isFading;
+
+    Location currentLocation;
+
+    
+
+    readonly KeyCode[] directionKeys = { KeyCode.LeftArrow, KeyCode.RightArrow, KeyCode.UpArrow, KeyCode.DownArrow };
     public override void Init()
     {
         canvasGroup = GetComponent<CanvasGroup>();
-        currentPerspective = 0;
+        currentLocation = initialLocation;
         canvasGroup.alpha = 1f;
         isFading = false;
-        UpdatePerspective();
+        UpdateCurrentLocation(currentLocation);
     }
     public override void GetInput()
     {
-        if (!isFading && Input.GetKeyDown(KeyCode.LeftArrow))
+        if (isFading)
+            return;
+
+        foreach (KeyCode key in directionKeys)
         {
-            PreviousPerspective();
+            if (Input.GetKeyDown(key))
+            {
+                GoToLocation(key);
+                break;
+            }
         }
 
-        if (!isFading && Input.GetKeyDown(KeyCode.RightArrow))
-        {
-            NextPerspective();
-        }
-
-        if(!isFading && Input.GetKeyDown(KeyCode.P))
+        if (Input.GetKeyDown(KeyCode.P))
         {
             NextScreen = Screens.TakingPicture;
         }
     }
 
-    private void PreviousPerspective()
+    private void GoToLocation(KeyCode keyCode)
     {
-        currentPerspective = (currentPerspective - 1 + locationData.perspectivesList.Count) % locationData.perspectivesList.Count;
-        StartCoroutine(FadeSequence());
+        Location newLocation = currentLocation.GetLocation(keyCode);
+        if (newLocation == null)
+            return;
+
+        StartCoroutine(FadeSequence(newLocation));
     }
 
-    private void NextPerspective()
+    private void UpdateCurrentLocation(Location newLocation)
     {
-        currentPerspective = (currentPerspective + 1) % locationData.perspectivesList.Count;
-        StartCoroutine(FadeSequence());
-    }
-
-    private void UpdatePerspective()
-    {
-        perspective.sprite = locationData.perspectivesList[currentPerspective];
+        if(currentLocation) currentLocation.gameObject.SetActive(false);
+        currentLocation = newLocation;
+        currentLocation.gameObject.SetActive(true);
+        locationNameText.text = newLocation.LocationName;
+        directionsHUD.SetDirections(newLocation.GetAvailableDirections());
     }
 
     public void FadeIn()
@@ -83,12 +94,12 @@ public class PerspectiveScreen : UIScreen
 
         canvasGroup.alpha = endAlpha;
     }
-    private IEnumerator FadeSequence()
+    private IEnumerator FadeSequence(Location newLocation)
     {
         isFading = true;
         yield return StartCoroutine(Fade(1f, 0f, fadeInDuration));
 
-        UpdatePerspective();
+        UpdateCurrentLocation(newLocation);
 
         yield return StartCoroutine(Fade(0f, 1f, fadeOutDuration));
 

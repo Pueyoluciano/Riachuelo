@@ -68,8 +68,6 @@ public class GameManager : MonoBehaviour
         if (isPaused)
             return;
 
-        print(isPaused);
-
         Screens nextScreen = UIScreens[currentScreen].Execute();
         if(nextScreen != Screens.NoScreen && nextScreen != currentScreen)
         {
@@ -106,16 +104,5 @@ public class GameManager : MonoBehaviour
     {
         Time.timeScale = 1;
         isPaused = false;
-    }
-
-    public void MainMenu()
-    {
-        UnPause();
-        SceneManager.LoadScene("MainMenu");
-    }
-
-    public void Quit()
-    {
-        Application.Quit();
     }
 }

@@ -8,5 +8,17 @@ public class SettingsManager : MonoBehaviour
     {
         QualitySettings.vSyncCount = 0;
         Application.targetFrameRate = 60;
+
+        VolumeController.VolumeToggled += VolumeToggledHandler;
+    }
+
+    private void OnDestroy()
+    {
+        VolumeController.VolumeToggled -= VolumeToggledHandler;
+    }
+
+    private void VolumeToggledHandler(bool value)
+    {
+        AudioListener.volume = value ? 1 : 0;
     }
 }
