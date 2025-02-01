@@ -8,11 +8,10 @@ using UnityEngine.UI;
 public class Polaroid : MonoBehaviour
 {
     [SerializeField] Camera polaroidCamera;
-    // [SerializeField] RawImage image;
     [SerializeField] RectTransform whiteFrameRectTransform;
     [SerializeField] CanvasScaler canvas;
 
-    [SerializeField] Image pictureFrame;
+    [SerializeField] RawImage pictureFrame;
     [SerializeField] RectTransform oldTVMaskRectTransform;
 
     [Header("polaroid Info")]
@@ -25,6 +24,6 @@ public class Polaroid : MonoBehaviour
     public string Title { get => title.text; set => title.text = value; }
     public string Subtitle { get => subtitle.text; set => subtitle.text = value; }
     public RectTransform WhiteFrameRectTransform { get => whiteFrameRectTransform; }
-    public Image PictureFrame { get => pictureFrame; }
+    public RawImage PictureFrame { get => pictureFrame; }
     public RectTransform OldTVMaskRectTransform { get => oldTVMaskRectTransform; }
 }

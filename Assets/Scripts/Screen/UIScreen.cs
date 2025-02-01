@@ -8,7 +8,7 @@ public abstract class UIScreen : MonoBehaviour
 
     public Screens NextScreen { get => nextScreen; set => nextScreen = value; }
 
-    private void Awake()
+    protected virtual void Awake()
     {
         nextScreen = Screens.NoScreen;
     }

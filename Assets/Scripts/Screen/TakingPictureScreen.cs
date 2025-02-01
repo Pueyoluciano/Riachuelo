@@ -9,29 +9,44 @@ public class TakingPictureScreen : UIScreen
 {
     [SerializeField] Image pictureFrame;
     [SerializeField] Image mask;
-    [SerializeField] int frameScale;
+    [SerializeField] GameObject cameraDisplayOverlay;
+
+    [Header("Looking Around")]
     [SerializeField] float movementSpeed;
+    
+    [Header("Zoom")]
+    [SerializeField] RectTransform center;
+    [SerializeField] float frameScale;
+    [SerializeField] float minFrameScale;
+    [SerializeField] float maxFrameScale;
+    [SerializeField] float zoomSpeed;
 
     [Header("Polaroid")]
     [SerializeField] Polaroid polaroidCanvas;
 
     readonly string folderPath = "Screenshots";
+
     public override void Init()
     {
-        pictureFrame.rectTransform.sizeDelta = new Vector3(1, mask.rectTransform.rect.height * frameScale, 0);
-        polaroidCanvas.PictureFrame.rectTransform.sizeDelta = new Vector3(1, polaroidCanvas.OldTVMaskRectTransform.rect.width * frameScale, 0);
-        polaroidCanvas.PictureFrame.color = Color.white;
+        UpdateFrameScale();
+        polaroidCanvas.PictureFrame.color = Color.white;        
     }
 
     public override void Enable()
     {
         base.Enable();
         pictureFrame.sprite = GameManager.Instance.PerspectiveScreen.GetCurrentLocation.GetPerspective();
-        polaroidCanvas.PictureFrame.sprite = GameManager.Instance.PerspectiveScreen.GetCurrentLocation.GetPerspective();
+
+        // reset zoom and position
+        frameScale = minFrameScale;
+        Vector2 actualSize = pictureFrame.rectTransform.sizeDelta * pictureFrame.rectTransform.localScale;
+        Vector2 centerActualSize = center.sizeDelta * center.localScale;
+        pictureFrame.rectTransform.anchoredPosition = (-actualSize + centerActualSize) / 2;
     }
 
     public override void GetInput()
     {
+        Zoom();
         LookAround();
 
         if (Input.GetKeyDown(KeyCode.P))
@@ -44,22 +59,49 @@ public class TakingPictureScreen : UIScreen
             NextScreen = Screens.Perspective;
         }
     }
-    private Vector2 GetRelativePosition(Vector2 position, RectTransform container)
+
+    private void UpdateFrameScale()
     {
-        Vector2 containerSize = container.rect.size;
-        return new Vector2(position.x / containerSize.x, position.y / containerSize.y);
+        pictureFrame.transform.localScale = Vector3.one * frameScale;
     }
 
-    private Vector2 GetAbsolutePosition(Vector2 relativePosition, RectTransform container, RectTransform image)
+    private void Zoom()
     {
-        Vector2 containerSize = container.rect.size;
+        bool zoomIn = Input.GetKey(KeyCode.Z);
+        bool zoomOut = Input.GetKey(KeyCode.X);
 
-        float absoluteX = relativePosition.x * containerSize.x;
-        float absoluteY = relativePosition.y * containerSize.y;
+        if (!zoomIn && !zoomOut)
+            return;
 
-        return new Vector2(absoluteX, absoluteY);
+        float deltaZoom = 0;
+
+        if (zoomIn)
+        {
+            deltaZoom = zoomSpeed;
+        }
+
+        if (zoomOut)
+        {
+            deltaZoom = -zoomSpeed;
+        }
+
+        frameScale = Mathf.Clamp(frameScale + deltaZoom * Time.deltaTime, minFrameScale, maxFrameScale);
+
+        /*https://discussions.unity.com/t/scale-around-point-similar-to-rotate-around/531171/8 */
+
+        // diff from object pivot to desired pivot/origin
+        Vector3 pivotDelta = pictureFrame.transform.localPosition - new Vector3(center.pivot.x, center.pivot.y, 0);
+        
+        Vector3 scaleFactor = new Vector3(
+            frameScale / pictureFrame.transform.localScale.x,
+            frameScale / pictureFrame.transform.localScale.y,
+            frameScale / pictureFrame.transform.localScale.z);
+        pivotDelta.Scale(scaleFactor);
+        
+        pictureFrame.transform.localPosition = new Vector3(center.pivot.x, center.pivot.y, 0) + pivotDelta;
+
+        UpdateFrameScale();
     }
-
     private void LookAround()
     {
         Vector2 displacement = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical")) * movementSpeed * Time.deltaTime;
@@ -79,11 +121,6 @@ public class TakingPictureScreen : UIScreen
         newPosition.y = Mathf.Clamp(newPosition.y, min.y, max.y);
 
         pictureFrame.rectTransform.anchoredPosition = newPosition;
-
-        Vector2 relativePosition = GetRelativePosition(newPosition, mask.rectTransform);
-        Vector2 polaroidNewPosition = GetAbsolutePosition(relativePosition, polaroidCanvas.OldTVMaskRectTransform, polaroidCanvas.PictureFrame.rectTransform);
-        polaroidCanvas.PictureFrame.rectTransform.anchoredPosition = polaroidNewPosition;
-
     }
 
     private void TakePolaroidScreenshot()
@@ -91,22 +128,42 @@ public class TakingPictureScreen : UIScreen
         polaroidCanvas.Title = GameManager.Instance.PerspectiveScreen.GetCurrentLocation.LocationName;
         polaroidCanvas.Subtitle = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
 
-        TakeScreenshot(polaroidCanvas.PolaroidCamera, (int)polaroidCanvas.Size.x, (int)polaroidCanvas.Size.y, true);
-    }
+        cameraDisplayOverlay.SetActive(false);
+        Texture2D miniature = TakeScreenshot(Camera.main, (int)mask.rectTransform.rect.width, (int)mask.rectTransform.rect.height, 2, true, false);
+        cameraDisplayOverlay.SetActive(true);
 
-    private Texture2D TakeScreenshot(Camera camera, int width, int height, bool saveToDisk=false)
+        polaroidCanvas.PictureFrame.texture = miniature;
+        TakeScreenshot(polaroidCanvas.PolaroidCamera, (int)polaroidCanvas.Size.x, (int)polaroidCanvas.Size.y,2 ,false, true);
+    }
+    private Texture2D TakeScreenshot(Camera camera, int width, int height, int scale = 2, bool crop=true, bool saveToDisk=false)
     {
-        if(saveToDisk && !Directory.Exists(folderPath))
+        if (saveToDisk && !Directory.Exists(folderPath))
              Directory.CreateDirectory(folderPath);
 
-        RenderTexture rt = new RenderTexture(width * 2, height * 2, 24);
+        // Tomo un screenshot con las dimensiones del canvas
+        RenderTexture rt = new RenderTexture(width * scale, height * scale, 24);
         camera.targetTexture = rt;
         camera.Render();
 
         RenderTexture.active = rt;
-        Texture2D screenshot = new Texture2D(width * 2, height * 2, TextureFormat.RGB24, false);
-        screenshot.ReadPixels(new Rect(0, 0, width * 2, height * 2), 0, 0);
+        Texture2D screenshot = new Texture2D(width * scale, height * scale, TextureFormat.RGB24, false);
+        screenshot.ReadPixels(new Rect(0, 0, width * scale, height * scale), 0, 0);
         screenshot.Apply();
+
+        if (crop)
+        {
+            // Hago un crop del screenshot original para dejar solo el rectangulo cuadrado correspondiente al modo foto.
+            // Hago un Hardcodeo nefasto para calcular los valores de crop.
+            // TODO: Dios tenga en la gloria a la persona que resuelva como calcular este crop de forma correcta.
+
+            var newPixels = screenshot.GetPixels(22 * scale, 160 * scale, 592 * scale, 592 * scale);
+            var croppedScreenshot = new Texture2D(592 * scale, 592 * scale);
+
+            croppedScreenshot.SetPixels(newPixels);
+            croppedScreenshot.Apply();
+
+            screenshot = croppedScreenshot;
+        }
         
         if (saveToDisk)
         {
