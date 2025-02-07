@@ -13,11 +13,11 @@ public abstract class UIScreen : MonoBehaviour
         nextScreen = Screens.NoScreen;
     }
     public abstract void Init();
-    public virtual void Enable()
+    public virtual void OnEnter()
     {
         gameObject.SetActive(true);
     }
-    public virtual void Disable()
+    public virtual void OnExit()
     {
         gameObject.SetActive(false);
         nextScreen = Screens.NoScreen;

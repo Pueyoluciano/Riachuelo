@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 004a96a1ad32d534084889913e6cb37e, type: 3}
+  m_Name: Example1
+  m_EditorClassIdentifier: 
+  messagesList:
+  - name: Carlos
+    nameColor: {r: 1, g: 0, b: 0, a: 1}
+    text: "El camino hacia el \xE9xito nunca es recto ni f\xE1cil. A veces, nos enfrentamos
+      a obst\xE1culos que parecen insuperables, pero son precisamente esos desaf\xEDos
+      los que nos ense\xF1an a perseverar. Si mantenemos la fe en nosotros mismos
+      y en nuestros sue\xF1os, no hay meta que no podamos alcanzar."
+  - name: Maria
+    nameColor: {r: 0, g: 1, b: 0, a: 1}
+    text: Hola mi nombre es Maria.

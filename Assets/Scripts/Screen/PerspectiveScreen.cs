@@ -12,6 +12,9 @@ public class PerspectiveScreen : UIScreen
     [SerializeField] TextMeshProUGUI locationNameText;
     [SerializeField] DirectionsHUD directionsHUD;
 
+    [Header("Minimap")]
+    [SerializeField] MiniMap miniMap;
+
     [Header("Fade In/Out")]
     [SerializeField] float fadeInDuration;
     [SerializeField] float fadeOutDuration;
@@ -22,8 +25,6 @@ public class PerspectiveScreen : UIScreen
     bool isFading;
 
     Location currentLocation;
-
-    
 
     readonly KeyCode[] directionKeys = { KeyCode.LeftArrow, KeyCode.RightArrow, KeyCode.UpArrow, KeyCode.DownArrow };
     public override void Init()
@@ -52,6 +53,11 @@ public class PerspectiveScreen : UIScreen
         {
             NextScreen = Screens.TakingPicture;
         }
+
+        if (Input.GetKeyDown(KeyCode.M))
+        {
+            NextScreen = Screens.Messages;
+        }
     }
 
     private void GoToLocation(KeyCode keyCode)
@@ -70,6 +76,7 @@ public class PerspectiveScreen : UIScreen
         currentLocation.gameObject.SetActive(true);
         locationNameText.text = newLocation.LocationName;
         directionsHUD.SetDirections(newLocation.GetAvailableDirections());
+        miniMap.UpdateCells();
     }
 
     public void FadeIn()

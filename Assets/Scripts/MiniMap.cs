@@ -2,23 +2,12 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.VisualScripting;
 using UnityEditor;
 using UnityEngine;
 
 public class MiniMap : MonoBehaviour
 {
-    /*public enum prueba
-    {
-        Empty,
-        StraightLine,
-        SquareLine,
-        Location_Unavailable,
-        Location_Available,
-        Location_Active
-    }
-
-    [SerializeField] public prueba asd;
-    */
     [Serializable]
     public struct SpriteMapping
     {
@@ -38,8 +27,8 @@ public class MiniMap : MonoBehaviour
         Line_Square,
         Line_T,
         Line_Cross,
-        Location_Unavailable,
-        Location_Available,
+        Location_Not_Visited,
+        Location_Visited,
         Location_Active
     }
 
@@ -56,6 +45,31 @@ public class MiniMap : MonoBehaviour
         }
 
         Instance = this;
+    }
+
+    public void UpdateCells()
+    {
+        foreach (var cell in GetComponentsInChildren<Cell>())
+        {
+            if (cell.IsLocation)
+            {
+                if (cell.location == null)
+                {
+                    throw new Exception("La celda de tipo Location no puede tener su valor location en null");
+                }
+                if (cell.location == GameManager.Instance.PerspectiveScreen.GetCurrentLocation)
+                {
+                    cell.SetCell(CellType.Location_Active);
+                }
+                else if(cell.IsVisited)
+                {
+                    cell.SetCell(CellType.Location_Visited);
+                } else
+                {
+                    cell.SetCell(CellType.Location_Not_Visited);
+                }
+            }
+        }
     }
 
     public Sprite GetSpriteForType(CellType type)
@@ -75,14 +89,8 @@ public class MiniMap : MonoBehaviour
         var CellChildren = GetComponentsInChildren<Cell>();
         foreach (var child in CellChildren)
         {
-            child.SetSpriteForType(GetSpriteForType(child.cellType));
+            // child.SetSpriteForType(GetSpriteForType(child.cellType));
+            child.UpdateCell();
         }
     }
-
-    /*
-    // Campos condicionales
-    [SerializeField] public int valorA; // Solo para TipoA
-    [SerializeField] public float valorB; // Solo para TipoB
-    [SerializeField] public string textoC; // Solo para TipoC
-    */
 }

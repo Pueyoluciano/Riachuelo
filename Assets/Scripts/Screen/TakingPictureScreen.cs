@@ -32,9 +32,9 @@ public class TakingPictureScreen : UIScreen
         polaroidCanvas.PictureFrame.color = Color.white;        
     }
 
-    public override void Enable()
+    public override void OnEnter()
     {
-        base.Enable();
+        base.OnEnter();
         pictureFrame.sprite = GameManager.Instance.PerspectiveScreen.GetCurrentLocation.GetPerspective();
 
         // reset zoom and position
@@ -57,6 +57,11 @@ public class TakingPictureScreen : UIScreen
         if (Input.GetKeyDown(KeyCode.Backspace))
         {
             NextScreen = Screens.Perspective;
+        }
+
+        if (Input.GetKeyDown(KeyCode.M))
+        {
+            NextScreen = Screens.Messages;
         }
     }
 

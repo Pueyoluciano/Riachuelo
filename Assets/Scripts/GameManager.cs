@@ -13,8 +13,10 @@ public class GameManager : MonoBehaviour
     [Header("UI Screens")]
     [SerializeField] PerspectiveScreen perspectiveScreen;
     [SerializeField] TakingPictureScreen takingPictureScreen;
+    [SerializeField] MessagesScreen messagesScreen;
 
     Screens currentScreen;
+    Screens previousScreen;
     Dictionary<Screens, UIScreen> UIScreens;
 
     public bool IsPaused { get => isPaused; }
@@ -22,6 +24,7 @@ public class GameManager : MonoBehaviour
     public static GameManager Instance { get; private set; }
     public PerspectiveScreen PerspectiveScreen { get => perspectiveScreen; }
     public TakingPictureScreen TakingPictureScreen { get => takingPictureScreen; }
+    public MessagesScreen MessagesScreen { get => messagesScreen; }
 
     private void Awake()
     {
@@ -40,10 +43,14 @@ public class GameManager : MonoBehaviour
         UIScreens = new()
         {
             { Screens.Perspective, perspectiveScreen },
-            { Screens.TakingPicture, takingPictureScreen }
+            { Screens.TakingPicture, takingPictureScreen },
+            { Screens.Messages, messagesScreen }
         };
 
         SetActiveScreen(Screens.Perspective);
+
+        // TODO: corregir esto. Deberia guardar la ultima pantalla que visite.
+        previousScreen = Screens.Perspective;
 
         foreach (var UIScreen in UIScreens.Values)
         {
@@ -71,16 +78,19 @@ public class GameManager : MonoBehaviour
         Screens nextScreen = UIScreens[currentScreen].Execute();
         if(nextScreen != Screens.NoScreen && nextScreen != currentScreen)
         {
-            SetActiveScreen(nextScreen);
+            if(nextScreen == Screens.PreviousScreen)
+                SetActiveScreen(previousScreen);
+            else
+                SetActiveScreen(nextScreen);
         }
     }
 
     private void SetActiveScreen(Screens nextScreen)
     {
-        if(currentScreen!= Screens.NoScreen) UIScreens[currentScreen].Disable();
+        if(currentScreen!= Screens.NoScreen) UIScreens[currentScreen].OnExit();
 
         currentScreen = nextScreen;
-        UIScreens[currentScreen].Enable();
+        UIScreens[currentScreen].OnEnter();
     }
 
     public void Pause()
