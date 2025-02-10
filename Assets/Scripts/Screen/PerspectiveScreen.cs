@@ -21,6 +21,8 @@ public class PerspectiveScreen : UIScreen
 
     public Location GetCurrentLocation {  get => currentLocation;  }
 
+    public override bool IsOverlay => false;
+
     CanvasGroup canvasGroup;
     bool isFading;
 

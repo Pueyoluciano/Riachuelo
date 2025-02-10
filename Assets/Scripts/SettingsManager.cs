@@ -4,12 +4,17 @@ using UnityEngine;
 
 public class SettingsManager : MonoBehaviour
 {
+    [Header("Debugging")]
+    [SerializeField] bool showDebugConsoleOnBuild;
+
     private void Awake()
     {
         QualitySettings.vSyncCount = 0;
         Application.targetFrameRate = 60;
 
         VolumeController.VolumeToggled += VolumeToggledHandler;
+
+        Debug.developerConsoleVisible = true;
     }
 
     private void OnDestroy()

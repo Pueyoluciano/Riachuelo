@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.UI;
@@ -11,7 +12,8 @@ public class Cell : MonoBehaviour
     [SerializeField] public Location location;
     [SerializeField] public Rotation rotation;
 
-    private Image image;
+    Image image;
+
     private MiniMap miniMapReference;
     bool isVisited;
 
@@ -49,7 +51,7 @@ public class Cell : MonoBehaviour
         if (miniMapReference == null)
             miniMapReference = GetComponentInParent<MiniMap>();
 
-        if(image == null)
+        if (image == null)
             image = GetComponent<Image>();
 
         SetSpriteForType(miniMapReference.GetSpriteForType(cellType));
@@ -59,7 +61,7 @@ public class Cell : MonoBehaviour
     public void SetCell(MiniMap.CellType type, Rotation rotation = Rotation.Zero)
     {
         cellType = type;
-        image.sprite = miniMapReference.GetSpriteForType(cellType);
+
         this.rotation = rotation;
 
         isVisited = isVisited || type == MiniMap.CellType.Location_Active;

@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UI;
 using static Cell;
 
 [CustomEditor(typeof(Cell))]
@@ -15,6 +16,7 @@ public class CellManager : Editor
         // Mandatory Fields
         manager.cellType = (MiniMap.CellType)EditorGUILayout.EnumPopup("Tipo", manager.cellType);
         manager.rotation = (Rotation)EditorGUILayout.EnumPopup("Rotacion", manager.rotation);
+        // manager.image = (Image)EditorGUILayout.ObjectField("Location", manager.image, typeof(Image), true);
 
         // Conditional fields
         if (manager.IsLocation)

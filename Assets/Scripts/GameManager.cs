@@ -13,7 +13,9 @@ public class GameManager : MonoBehaviour
     [Header("UI Screens")]
     [SerializeField] PerspectiveScreen perspectiveScreen;
     [SerializeField] TakingPictureScreen takingPictureScreen;
-    [SerializeField] MessagesScreen messagesScreen;
+
+    [Header("Messages Controller")]
+    [SerializeField] MessagesController messagesController;
 
     Screens currentScreen;
     Screens previousScreen;
@@ -24,8 +26,6 @@ public class GameManager : MonoBehaviour
     public static GameManager Instance { get; private set; }
     public PerspectiveScreen PerspectiveScreen { get => perspectiveScreen; }
     public TakingPictureScreen TakingPictureScreen { get => takingPictureScreen; }
-    public MessagesScreen MessagesScreen { get => messagesScreen; }
-
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -43,14 +43,10 @@ public class GameManager : MonoBehaviour
         UIScreens = new()
         {
             { Screens.Perspective, perspectiveScreen },
-            { Screens.TakingPicture, takingPictureScreen },
-            { Screens.Messages, messagesScreen }
+            { Screens.TakingPicture, takingPictureScreen }
         };
 
         SetActiveScreen(Screens.Perspective);
-
-        // TODO: corregir esto. Deberia guardar la ultima pantalla que visite.
-        previousScreen = Screens.Perspective;
 
         foreach (var UIScreen in UIScreens.Values)
         {
@@ -76,21 +72,32 @@ public class GameManager : MonoBehaviour
             return;
 
         Screens nextScreen = UIScreens[currentScreen].Execute();
-        if(nextScreen != Screens.NoScreen && nextScreen != currentScreen)
-        {
-            if(nextScreen == Screens.PreviousScreen)
-                SetActiveScreen(previousScreen);
-            else
-                SetActiveScreen(nextScreen);
-        }
+        
+        SetActiveScreen(nextScreen);        
     }
 
     private void SetActiveScreen(Screens nextScreen)
     {
-        if(currentScreen!= Screens.NoScreen) UIScreens[currentScreen].OnExit();
+        if (nextScreen == Screens.NoScreen || nextScreen == currentScreen)
+            return;
 
-        currentScreen = nextScreen;
-        UIScreens[currentScreen].OnEnter();
+        bool shouldResetState = true;
+        if (nextScreen == Screens.PreviousScreen)
+        {
+            if(currentScreen != Screens.NoScreen) UIScreens[currentScreen].OnExit(false);
+            currentScreen = previousScreen;
+            previousScreen = default;
+            shouldResetState = false;
+
+        }
+        else
+        {
+            if (currentScreen != Screens.NoScreen) UIScreens[currentScreen].OnExit(UIScreens[nextScreen].IsOverlay);
+            previousScreen = currentScreen;
+            currentScreen = nextScreen;
+        }
+
+        UIScreens[currentScreen].OnEnter(shouldResetState);
     }
 
     public void Pause()

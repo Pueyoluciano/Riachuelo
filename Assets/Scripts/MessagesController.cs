@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
-public class MessagesScreen : UIScreen
+public class MessagesController : MonoBehaviour
 {
     [Header("Fields")]
     [SerializeField] TextMeshProUGUI title;
@@ -17,8 +17,6 @@ public class MessagesScreen : UIScreen
     [Header("Message Example")]
     [SerializeField] ConversationData exampleConversationData;
 
-    public static Action ShowConversation;
-
     private bool isTyping;
     private bool finishPhrase;
     private float finishPhraseElapsedTime;
@@ -29,86 +27,89 @@ public class MessagesScreen : UIScreen
     private string blinkingText = " _";
 
     private bool finishedConversation;
+    private bool finishedMessage;
     public bool IsTyping { get => isTyping; }
 
     private bool CanPressEnterAgain { get => Time.time - finishPhraseElapsedTime >= waitingTime; }
     private bool ShoudUpdateBlink { get => Time.time - blinkingElapsedTime >= blinkingTime; }
+    public bool FinishedConversation { get => finishedConversation; }
 
-    public override bool IsOverlay => true;
-    protected override void Awake()
+    public static Action OnNewConversation;
+
+    private void Awake()
     {
-        base.Awake();
 
-        ShowConversation += ShowConversationHandler;
+        OnNewConversation += OnNewConversationHandler;
     }
 
     private void OnDestroy()
     {
-        ShowConversation -= ShowConversationHandler;
+        OnNewConversation -= OnNewConversationHandler;
+    }
+    private void Start()
+    {
+        ResetConversation();
     }
 
-    public override void Init()
+    private void Update()
     {
-
+        GetInput();
+        UpdateBlinking();
     }
 
-    public override void GetInput()
+    private void ResetConversation()
     {
+        CleanViewport();
+        isTyping = false;
+        finishPhrase = false;
+        blinking = true;
+        finishedConversation = false;
+        finishedMessage = false;
+    }
+
+    private void GetInput()
+    {
+        if (Input.GetKeyDown(KeyCode.N))
+        {
+            OnNewConversation?.Invoke();
+        }
         if (Input.GetKeyDown(KeyCode.Return) && CanPressEnterAgain)
         {
             if (isTyping)
             {
                 finishPhrase = true;
                 finishPhraseElapsedTime = Time.time;
-            } else
+            }
+            else
             {
                 isTyping = true;
             }
         }
-
-        if (finishedConversation)
-            NextScreen = Screens.PreviousScreen;
     }
 
-    public override void OnEnter(bool resetState)
+    private void CleanViewport()
     {
-        base.OnEnter(resetState);
-
         title.text = "";
         message.text = "";
-        isTyping = false;
-        finishPhrase = false;
-        blinking = true;
-        finishedConversation = false;
-
-        StartCoroutine(TypeText(exampleConversationData));
     }
-    private void ShowConversationHandler()
-    {
-
-    }
-
-    public override Screens Execute()
-    {
-        if (!isTyping)
-            UpdateBlinking();
-
-        return base.Execute();
-    }
-
     private void UpdateBlinking()
     {
-        if (ShoudUpdateBlink)
+        if (!finishedConversation && finishedMessage && !isTyping && ShoudUpdateBlink)
         {
-
             if (blinking)
                 message.text += blinkingText;
             else
                 message.text = message.text.Substring(0, message.text.Length - blinkingText.Length);
-            
+
             blinking = !blinking;
             blinkingElapsedTime = Time.time;
         }
+    }
+
+    private void OnNewConversationHandler()
+    {
+        ResetConversation();
+        StartCoroutine(TypeText(exampleConversationData));
     }
     private IEnumerator TypeText(ConversationData conversation)
     {
@@ -118,12 +119,13 @@ public class MessagesScreen : UIScreen
             title.color = convMessage.nameColor;
             message.text = "";
             string fullText = "";
-        
+
             fullText += "\"";
             fullText += convMessage.text;
             fullText += "\"";
 
             isTyping = true;
+            finishedMessage = false;
 
             foreach (char letter in fullText)
             {
@@ -140,13 +142,16 @@ public class MessagesScreen : UIScreen
             // Cuando termino un mensaje actualizo el tiempo de espera.
             // para que tenga que esperar unos momentos antes de pasar al siguiente texto.
             finishPhraseElapsedTime = Time.time;
-            
+
             isTyping = false;
             blinking = true;
+            finishedMessage = true;
+
             while (!isTyping)
                 yield return null;
         }
 
         finishedConversation = true;
+        CleanViewport();
     }
 }

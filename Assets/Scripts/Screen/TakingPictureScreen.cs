@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -13,35 +14,49 @@ public class TakingPictureScreen : UIScreen
 
     [Header("Looking Around")]
     [SerializeField] float movementSpeed;
-    
+
+    [Header("Wobble")]
+    public float minWobbleAmount = 0.1f;
+    public float maxWobbleAmount = 0.3f;
+    public float wobbleSpeed = 1f;
+
     [Header("Zoom")]
+    [SerializeField] TextMeshProUGUI zoomText;
     [SerializeField] RectTransform center;
     [SerializeField] float frameScale;
     [SerializeField] float minFrameScale;
     [SerializeField] float maxFrameScale;
     [SerializeField] float zoomSpeed;
 
+    [Header("Shutter Effect")]
+    [SerializeField] Image shutterPanel;
+    [SerializeField] AudioClip shutterAudioClip;
+
     [Header("Polaroid")]
     [SerializeField] Polaroid polaroidCanvas;
 
     readonly string folderPath = "Screenshots";
-
+    public override bool IsOverlay => false;
     public override void Init()
     {
         UpdateFrameScale();
         polaroidCanvas.PictureFrame.color = Color.white;        
     }
 
-    public override void OnEnter()
+    public override void OnEnter(bool resetState)
     {
-        base.OnEnter();
+        base.OnEnter(resetState);
         pictureFrame.sprite = GameManager.Instance.PerspectiveScreen.GetCurrentLocation.GetPerspective();
 
-        // reset zoom and position
-        frameScale = minFrameScale;
-        Vector2 actualSize = pictureFrame.rectTransform.sizeDelta * pictureFrame.rectTransform.localScale;
-        Vector2 centerActualSize = center.sizeDelta * center.localScale;
-        pictureFrame.rectTransform.anchoredPosition = (-actualSize + centerActualSize) / 2;
+        if(resetState)
+        {
+            // reset zoom and position
+            frameScale = minFrameScale;
+            UpdateFrameScale();
+            Vector2 actualSize = pictureFrame.rectTransform.sizeDelta * pictureFrame.rectTransform.localScale;
+            Vector2 centerActualSize = center.sizeDelta * center.localScale;
+            pictureFrame.rectTransform.anchoredPosition = (-actualSize + centerActualSize) / 2;
+        }
     }
 
     public override void GetInput()
@@ -75,6 +90,8 @@ public class TakingPictureScreen : UIScreen
         bool zoomIn = Input.GetKey(KeyCode.Z);
         bool zoomOut = Input.GetKey(KeyCode.X);
 
+        zoomText.text = (frameScale / 3).ToString("#.0") + "x";
+
         if (!zoomIn && !zoomOut)
             return;
 
@@ -104,8 +121,18 @@ public class TakingPictureScreen : UIScreen
         pivotDelta.Scale(scaleFactor);
         
         pictureFrame.transform.localPosition = new Vector3(center.pivot.x, center.pivot.y, 0) + pivotDelta;
-
         UpdateFrameScale();
+    }
+    private Vector2 Wobble(Vector2 originalPosition)
+    {
+        float wobbleAmount = Mathf.PingPong(Time.time * minWobbleAmount, maxWobbleAmount);
+
+        wobbleAmount *= (frameScale / 3); // Tengo en cuenta el zoom
+
+        float wobbleX = Mathf.Sin(Time.time * wobbleSpeed) * wobbleAmount;
+        float wobbleY = Mathf.Cos(Time.time * (wobbleSpeed * 1.2f)) * wobbleAmount; // Frecuencia distinta para variar
+
+        return originalPosition += new Vector2(wobbleX, wobbleY);
     }
     private void LookAround()
     {
@@ -118,6 +145,7 @@ public class TakingPictureScreen : UIScreen
         imageSize.x *= pictureFrame.rectTransform.localScale.x;
         imageSize.y *= pictureFrame.rectTransform.localScale.y;
 
+        newPosition = Wobble(newPosition);
 
         Vector2 min = -(imageSize - maskSize);
         Vector2 max = new (0, 0);
@@ -128,17 +156,42 @@ public class TakingPictureScreen : UIScreen
         pictureFrame.rectTransform.anchoredPosition = newPosition;
     }
 
+    private IEnumerator ShutterEffect()
+    {
+        float elapsed = 0f;
+        float duration = 0.5f;
+        
+        shutterPanel.color = new(shutterPanel.color.r, shutterPanel.color.g, shutterPanel.color.b, 1);
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            shutterPanel.color = new(shutterPanel.color.r, shutterPanel.color.g, shutterPanel.color.b, Mathf.Lerp(1f, 0f, elapsed / duration));
+            yield return null;
+        }
+
+        shutterPanel.color = new(shutterPanel.color.r, shutterPanel.color.g, shutterPanel.color.b, 0);
+    }
+
     private void TakePolaroidScreenshot()
     {
         polaroidCanvas.Title = GameManager.Instance.PerspectiveScreen.GetCurrentLocation.LocationName;
         polaroidCanvas.Subtitle = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
 
         cameraDisplayOverlay.SetActive(false);
-        Texture2D miniature = TakeScreenshot(Camera.main, (int)mask.rectTransform.rect.width, (int)mask.rectTransform.rect.height, 2, true, false);
-        cameraDisplayOverlay.SetActive(true);
+        zoomText.gameObject.SetActive(false);
 
+        Texture2D miniature = TakeScreenshot(Camera.main, (int)mask.rectTransform.rect.width, (int)mask.rectTransform.rect.height, 2, true, false);
+        
+        cameraDisplayOverlay.SetActive(true);
+        zoomText.gameObject.SetActive(true);
+        
         polaroidCanvas.PictureFrame.texture = miniature;
         TakeScreenshot(polaroidCanvas.PolaroidCamera, (int)polaroidCanvas.Size.x, (int)polaroidCanvas.Size.y,2 ,false, true);
+
+        StartCoroutine(ShutterEffect());
+        // TODO: Mejorar manejo de audio
+        GameManager.Instance.GetComponent<AudioSource>().PlayOneShot(shutterAudioClip);
     }
     private Texture2D TakeScreenshot(Camera camera, int width, int height, int scale = 2, bool crop=true, bool saveToDisk=false)
     {

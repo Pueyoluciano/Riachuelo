@@ -89,7 +89,6 @@ public class MiniMap : MonoBehaviour
         var CellChildren = GetComponentsInChildren<Cell>();
         foreach (var child in CellChildren)
         {
-            // child.SetSpriteForType(GetSpriteForType(child.cellType));
             child.UpdateCell();
         }
     }
