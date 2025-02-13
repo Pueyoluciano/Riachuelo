@@ -69,14 +69,19 @@ public class TakingPictureScreen : UIScreen
             TakePolaroidScreenshot();
         }
 
+        if (Input.GetKeyDown(KeyCode.T))
+        {
+            NextScreen = Screens.Logbook;
+        }
+
+        if (Input.GetKeyDown(KeyCode.U))
+        {
+            NextScreen = Screens.Gallery;
+        }
+
         if (Input.GetKeyDown(KeyCode.Backspace))
         {
             NextScreen = Screens.Perspective;
-        }
-
-        if (Input.GetKeyDown(KeyCode.M))
-        {
-            NextScreen = Screens.Messages;
         }
     }
 

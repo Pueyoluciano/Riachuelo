@@ -4,5 +4,6 @@ public enum Screens
     PreviousScreen,
     Perspective,
     TakingPicture,
-    Messages
+    Logbook,
+    Gallery
 }

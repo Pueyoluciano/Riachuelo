@@ -69,10 +69,12 @@ public class MessagesController : MonoBehaviour
 
     private void GetInput()
     {
-        if (Input.GetKeyDown(KeyCode.N))
+        // TODO: codigo temporal para probar los mensajes
+        if (Input.GetKeyDown(KeyCode.M))
         {
             OnNewConversation?.Invoke();
         }
+
         if (Input.GetKeyDown(KeyCode.Return) && CanPressEnterAgain)
         {
             if (isTyping)

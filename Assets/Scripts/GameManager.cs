@@ -13,6 +13,8 @@ public class GameManager : MonoBehaviour
     [Header("UI Screens")]
     [SerializeField] PerspectiveScreen perspectiveScreen;
     [SerializeField] TakingPictureScreen takingPictureScreen;
+    [SerializeField] LogbookScreen logbookScreen;
+    [SerializeField] GalleryScreen galleryScreen;
 
     [Header("Messages Controller")]
     [SerializeField] MessagesController messagesController;
@@ -26,6 +28,9 @@ public class GameManager : MonoBehaviour
     public static GameManager Instance { get; private set; }
     public PerspectiveScreen PerspectiveScreen { get => perspectiveScreen; }
     public TakingPictureScreen TakingPictureScreen { get => takingPictureScreen; }
+    public LogbookScreen LogbookScreen { get => logbookScreen; set => logbookScreen = value; }
+    public GalleryScreen GalleryScreen { get => galleryScreen; set => galleryScreen = value; }
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -43,7 +48,9 @@ public class GameManager : MonoBehaviour
         UIScreens = new()
         {
             { Screens.Perspective, perspectiveScreen },
-            { Screens.TakingPicture, takingPictureScreen }
+            { Screens.TakingPicture, takingPictureScreen },
+            { Screens.Logbook, logbookScreen },
+            { Screens.Gallery, galleryScreen },
         };
 
         SetActiveScreen(Screens.Perspective);

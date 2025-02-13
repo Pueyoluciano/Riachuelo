@@ -56,9 +56,14 @@ public class PerspectiveScreen : UIScreen
             NextScreen = Screens.TakingPicture;
         }
 
-        if (Input.GetKeyDown(KeyCode.M))
+        if (Input.GetKeyDown(KeyCode.T))
         {
-            NextScreen = Screens.Messages;
+            NextScreen = Screens.Logbook;
+        }
+
+        if (Input.GetKeyDown(KeyCode.U))
+        {
+            NextScreen = Screens.Gallery;
         }
     }
 
