@@ -54,16 +54,21 @@ public class PerspectiveScreen : UIScreen
         if (Input.GetKeyDown(KeyCode.P))
         {
             NextScreen = Screens.TakingPicture;
+
+            // TODO: Revisar el uso de las acciones para que sea un poco mas automatico.
+            GameManager.Instance.ActionsController.TakePicture.Use();
         }
 
         if (Input.GetKeyDown(KeyCode.T))
         {
             NextScreen = Screens.Logbook;
+            GameManager.Instance.ActionsController.Logbook.Use();
         }
 
         if (Input.GetKeyDown(KeyCode.U))
         {
             NextScreen = Screens.Gallery;
+            GameManager.Instance.ActionsController.Gallery.Use();
         }
     }
 

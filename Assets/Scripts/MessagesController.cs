@@ -2,12 +2,12 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class MessagesController : MonoBehaviour
 {
     [Header("Fields")]
-    [SerializeField] TextMeshProUGUI title;
     [SerializeField] TextMeshProUGUI message;
 
     [Header("Type Writer")]
@@ -26,15 +26,15 @@ public class MessagesController : MonoBehaviour
     private bool blinking;
     private string blinkingText = " _";
 
-    private bool finishedConversation;
+    private bool startedConversation;
     private bool finishedMessage;
     public bool IsTyping { get => isTyping; }
 
     private bool CanPressEnterAgain { get => Time.time - finishPhraseElapsedTime >= waitingTime; }
     private bool ShoudUpdateBlink { get => Time.time - blinkingElapsedTime >= blinkingTime; }
-    public bool FinishedConversation { get => finishedConversation; }
+    public bool StartedConversation { get => startedConversation; }
 
-    public static Action OnNewConversation;
+    public static Action<Conversations> OnNewConversation;
 
     private void Awake()
     {
@@ -63,18 +63,12 @@ public class MessagesController : MonoBehaviour
         isTyping = false;
         finishPhrase = false;
         blinking = true;
-        finishedConversation = false;
+        startedConversation = false;
         finishedMessage = false;
     }
 
     private void GetInput()
     {
-        // TODO: codigo temporal para probar los mensajes
-        if (Input.GetKeyDown(KeyCode.M))
-        {
-            OnNewConversation?.Invoke();
-        }
-
         if (Input.GetKeyDown(KeyCode.Return) && CanPressEnterAgain)
         {
             if (isTyping)
@@ -91,12 +85,11 @@ public class MessagesController : MonoBehaviour
 
     private void CleanViewport()
     {
-        title.text = "";
         message.text = "";
     }
     private void UpdateBlinking()
     {
-        if (!finishedConversation && finishedMessage && !isTyping && ShoudUpdateBlink)
+        if (startedConversation && finishedMessage && !isTyping && ShoudUpdateBlink)
         {
             if (blinking)
                 message.text += blinkingText;
@@ -108,18 +101,29 @@ public class MessagesController : MonoBehaviour
         }
     }
 
-    private void OnNewConversationHandler()
+    private void OnNewConversationHandler(Conversations conversationID)
     {
+        if (startedConversation)
+            return;
+
+        GameManager.Instance.ActionsController.Ponder.Use();
+        GameManager.Instance.ActionsController.Ponder.StartCooldown(15f); 
+
         ResetConversation();
-        StartCoroutine(TypeText(exampleConversationData));
+        StartCoroutine(TypeText(GameManager.Instance.ConversationManger.GetConversationData(conversationID)));
+    }
+
+    private string coloredString(Color color, string name)
+    {
+        return $"<color=#{color.ToHexString()}>{name}</color>";
     }
     private IEnumerator TypeText(ConversationData conversation)
     {
+        startedConversation = true;
+
         foreach (var convMessage in conversation.messagesList)
         {
-            title.text = convMessage.name;
-            title.color = convMessage.nameColor;
-            message.text = "";
+            message.text = coloredString(convMessage.nameColor, convMessage.name) + ": ";
             string fullText = "";
 
             fullText += "\"";
@@ -134,7 +138,7 @@ public class MessagesController : MonoBehaviour
                 if (finishPhrase)
                 {
                     finishPhrase = false;
-                    message.text = fullText;
+                    message.text = coloredString(convMessage.nameColor, convMessage.name) + ": " + fullText;
                     break;
                 }
                 message.text += letter;
@@ -153,7 +157,7 @@ public class MessagesController : MonoBehaviour
                 yield return null;
         }
 
-        finishedConversation = true;
+        startedConversation = false;
         CleanViewport();
     }
 }

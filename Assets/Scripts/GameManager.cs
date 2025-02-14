@@ -18,6 +18,13 @@ public class GameManager : MonoBehaviour
 
     [Header("Messages Controller")]
     [SerializeField] MessagesController messagesController;
+    
+    [Header("Actions Controller")]
+    [SerializeField] ActionsController actionsController;
+
+    [Header("Conversations Manager")]
+    [SerializeField] ConversationManager conversationManger;
+
 
     Screens currentScreen;
     Screens previousScreen;
@@ -30,6 +37,8 @@ public class GameManager : MonoBehaviour
     public TakingPictureScreen TakingPictureScreen { get => takingPictureScreen; }
     public LogbookScreen LogbookScreen { get => logbookScreen; set => logbookScreen = value; }
     public GalleryScreen GalleryScreen { get => galleryScreen; set => galleryScreen = value; }
+    public ConversationManager ConversationManger { get => conversationManger; }
+    public ActionsController ActionsController { get => actionsController; }
 
     private void Awake()
     {

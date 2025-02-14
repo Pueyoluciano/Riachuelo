@@ -67,22 +67,35 @@ public class TakingPictureScreen : UIScreen
         if (Input.GetKeyDown(KeyCode.P))
         {
             TakePolaroidScreenshot();
+
+            GameManager.Instance.ActionsController.TakePicture.Use();
         }
 
         if (Input.GetKeyDown(KeyCode.T))
         {
             NextScreen = Screens.Logbook;
+            GameManager.Instance.ActionsController.Logbook.Use();
         }
 
         if (Input.GetKeyDown(KeyCode.U))
         {
             NextScreen = Screens.Gallery;
+            GameManager.Instance.ActionsController.Gallery.Use();
         }
 
         if (Input.GetKeyDown(KeyCode.Backspace))
         {
             NextScreen = Screens.Perspective;
         }
+        
+        if (Input.GetKeyDown(KeyCode.I))
+        {
+            Ponder();
+        }
+    }
+    private void Ponder()
+    {
+        MessagesController.OnNewConversation?.Invoke(GetComponent<ConversationTrigger>().conversation);
     }
 
     private void UpdateFrameScale()
@@ -161,23 +174,6 @@ public class TakingPictureScreen : UIScreen
         pictureFrame.rectTransform.anchoredPosition = newPosition;
     }
 
-    private IEnumerator ShutterEffect()
-    {
-        float elapsed = 0f;
-        float duration = 0.5f;
-        
-        shutterPanel.color = new(shutterPanel.color.r, shutterPanel.color.g, shutterPanel.color.b, 1);
-
-        while (elapsed < duration)
-        {
-            elapsed += Time.deltaTime;
-            shutterPanel.color = new(shutterPanel.color.r, shutterPanel.color.g, shutterPanel.color.b, Mathf.Lerp(1f, 0f, elapsed / duration));
-            yield return null;
-        }
-
-        shutterPanel.color = new(shutterPanel.color.r, shutterPanel.color.g, shutterPanel.color.b, 0);
-    }
-
     private void TakePolaroidScreenshot()
     {
         polaroidCanvas.Title = GameManager.Instance.PerspectiveScreen.GetCurrentLocation.LocationName;
@@ -194,7 +190,8 @@ public class TakingPictureScreen : UIScreen
         polaroidCanvas.PictureFrame.texture = miniature;
         TakeScreenshot(polaroidCanvas.PolaroidCamera, (int)polaroidCanvas.Size.x, (int)polaroidCanvas.Size.y,2 ,false, true);
 
-        StartCoroutine(ShutterEffect());
+        StartCoroutine(Utilities.ShutterEffect(shutterPanel, 0.5f, 1, 0));
+
         // TODO: Mejorar manejo de audio
         GameManager.Instance.GetComponent<AudioSource>().PlayOneShot(shutterAudioClip);
     }
