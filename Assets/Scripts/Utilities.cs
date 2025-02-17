@@ -20,4 +20,15 @@ public class Utilities
 
         image.color = new(image.color.r, image.color.g, image.color.b, endAlpha);
     }
+
+    /// <summary>
+    /// Checks if a cooldown has already ended.
+    /// </summary>
+    /// <param name="cooldownTime"></param>
+    /// <param name="whenCooldownStarted"></param>
+    /// <returns>Returns true when the cooldown time is over.</returns>
+    public static bool CheckCooldown(float cooldownTime, float whenCooldownStarted)
+    {
+        return Time.time - whenCooldownStarted > cooldownTime;
+    }
 }

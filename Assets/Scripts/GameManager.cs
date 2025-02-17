@@ -39,6 +39,7 @@ public class GameManager : MonoBehaviour
     public GalleryScreen GalleryScreen { get => galleryScreen; set => galleryScreen = value; }
     public ConversationManager ConversationManger { get => conversationManger; }
     public ActionsController ActionsController { get => actionsController; }
+    public MessagesController MessagesController { get => messagesController; }
 
     private void Awake()
     {

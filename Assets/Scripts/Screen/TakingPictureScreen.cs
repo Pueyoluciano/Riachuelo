@@ -5,6 +5,7 @@ using System.IO;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using static Unity.VisualScripting.Metadata;
 
 public class TakingPictureScreen : UIScreen
 {
@@ -14,6 +15,11 @@ public class TakingPictureScreen : UIScreen
 
     [Header("Looking Around")]
     [SerializeField] float movementSpeed;
+
+    [Header("Ponder")]
+    [SerializeField] RectTransform PonderingPoint;
+    [SerializeField] float ponderingCooldown;
+    [SerializeField] RectTransform mainCanvas;
 
     [Header("Wobble")]
     public float minWobbleAmount = 0.1f;
@@ -36,11 +42,21 @@ public class TakingPictureScreen : UIScreen
     [SerializeField] Polaroid polaroidCanvas;
 
     readonly string folderPath = "Screenshots";
+
+    // The copied temporal inspectables.
+    // This is populated when entering to this screen and
+    // wiped out when leaving.
+    private List<Inspectable> currentInspectables;
+
+    private float lastSuccessfullPonder;
+
     public override bool IsOverlay => false;
     public override void Init()
     {
         UpdateFrameScale();
-        polaroidCanvas.PictureFrame.color = Color.white;        
+        polaroidCanvas.PictureFrame.color = Color.white;
+        currentInspectables = new List<Inspectable>();
+        lastSuccessfullPonder = -1;
     }
 
     public override void OnEnter(bool resetState)
@@ -48,7 +64,9 @@ public class TakingPictureScreen : UIScreen
         base.OnEnter(resetState);
         pictureFrame.sprite = GameManager.Instance.PerspectiveScreen.GetCurrentLocation.GetPerspective();
 
-        if(resetState)
+        CopyInspectablesToFrame();
+
+        if (resetState)
         {
             // reset zoom and position
             frameScale = minFrameScale;
@@ -57,6 +75,13 @@ public class TakingPictureScreen : UIScreen
             Vector2 centerActualSize = center.sizeDelta * center.localScale;
             pictureFrame.rectTransform.anchoredPosition = (-actualSize + centerActualSize) / 2;
         }
+    }
+
+    public override void OnExit(bool isNextScreenOverlay)
+    {
+        base.OnExit(isNextScreenOverlay);
+
+        DeleteInspectablesFromFrame();
     }
 
     public override void GetInput()
@@ -95,7 +120,48 @@ public class TakingPictureScreen : UIScreen
     }
     private void Ponder()
     {
-        MessagesController.OnNewConversation?.Invoke(GetComponent<ConversationTrigger>().conversation);
+        if (GameManager.Instance.MessagesController.StartedConversation || 
+            lastSuccessfullPonder != -1 && !Utilities.CheckCooldown(ponderingCooldown, lastSuccessfullPonder))
+            return;
+
+        foreach (var inspectable in currentInspectables)
+        {
+            if(IsOverlapping(inspectable.GetComponent<RectTransform>(), PonderingPoint))
+            {
+                UsePonderAction(inspectable.ConversationTrigger.conversation);
+                break;
+            }
+        }
+
+        UsePonderAction(Conversations.Nothing_Interesting);
+    }
+
+    private bool IsOverlapping(RectTransform rectA, RectTransform rectB)
+    {        
+        Rect rect1 = GetCanvasRect(rectA);
+        Rect rect2 = GetCanvasRect(rectB);
+        return rect1.Overlaps(rect2);
+    }
+    
+    private Rect GetCanvasRect(RectTransform rectTransform)
+    {
+        Vector3[] corners = new Vector3[4];
+        rectTransform.GetWorldCorners(corners); // Obtiene las esquinas en coordenadas mundiales
+
+        Camera cam = Camera.main; // Cámara usada por el Canvas
+        Vector2 min = RectTransformUtility.WorldToScreenPoint(cam, corners[0]); // Esquina inferior izquierda
+        Vector2 max = RectTransformUtility.WorldToScreenPoint(cam, corners[2]); // Esquina superior derecha
+
+        // Crear el rect en coordenadas de pantalla
+        return new Rect(min.x, min.y, max.x - min.x, max.y - min.y);   
+    }
+
+    private void UsePonderAction(Conversations conversation)
+    {
+        MessagesController.OnNewConversation?.Invoke(conversation);
+        GameManager.Instance.ActionsController.Ponder.Use();
+        GameManager.Instance.ActionsController.Ponder.StartCooldown(ponderingCooldown);
+        lastSuccessfullPonder = Time.time;
     }
 
     private void UpdateFrameScale()
@@ -239,5 +305,51 @@ public class TakingPictureScreen : UIScreen
         Destroy(rt);
 
         return screenshot;
+    }
+
+    public void CopyInspectablesToFrame()
+    {
+        Location currentLocation = GameManager.Instance.PerspectiveScreen.GetCurrentLocation;
+        Inspectable[] inspectables = currentLocation.Inspectables;
+
+        foreach (var inspectable in inspectables)
+        {
+            Inspectable newInspectable = Instantiate(inspectable);
+
+            currentInspectables.Add(newInspectable);
+
+            newInspectable.transform.SetParent(pictureFrame.transform, false);
+
+            RectTransform currentLocationRectTransform = currentLocation.GetComponent<RectTransform>();
+            RectTransform inspectableRectTransform = inspectable.GetComponent<RectTransform>();
+            RectTransform newInspectableRectTransform = newInspectable.GetComponent<RectTransform>();
+            
+            // Obtener el factor de escala entre los contenedores
+            Vector2 scaleFactor = new Vector2(
+                pictureFrame.rectTransform.rect.width / currentLocationRectTransform.rect.width,
+                pictureFrame.rectTransform.rect.height / currentLocationRectTransform.rect.height
+            );
+
+            // Ajustar la posición relativa
+            Vector2 relativePos = inspectableRectTransform.anchoredPosition;
+            newInspectableRectTransform.anchoredPosition = new Vector2(relativePos.x * scaleFactor.x, relativePos.y * scaleFactor.y);
+
+            // Ajustar la escala relativa
+            newInspectableRectTransform.localScale = new Vector3(
+                newInspectableRectTransform.localScale.x * scaleFactor.x,
+                newInspectableRectTransform.localScale.y * scaleFactor.y,
+                1f
+            );
+        }
+    }
+
+    private void DeleteInspectablesFromFrame()
+    {       
+        for ( int i = 0; i < currentInspectables.Count; i++)
+        {
+            Destroy(currentInspectables[i]);
+        }
+
+        currentInspectables.Clear();
     }
 }

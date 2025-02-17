@@ -106,9 +106,6 @@ public class MessagesController : MonoBehaviour
         if (startedConversation)
             return;
 
-        GameManager.Instance.ActionsController.Ponder.Use();
-        GameManager.Instance.ActionsController.Ponder.StartCooldown(15f); 
-
         ResetConversation();
         StartCoroutine(TypeText(GameManager.Instance.ConversationManger.GetConversationData(conversationID)));
     }
