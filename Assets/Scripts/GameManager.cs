@@ -29,8 +29,6 @@ public class GameManager : MonoBehaviour
     [Header("Conversations Manager")]
     [SerializeField] ConversationManager conversationManger;
 
-
-
     Screens currentScreen;
     Screens previousScreen;
     Dictionary<Screens, UIScreen> UIScreens;
@@ -77,6 +75,8 @@ public class GameManager : MonoBehaviour
         {
             UIScreen.Init();
         }
+
+        AudioManager.Instance.PlaySound(SoundList.MainMenuMusic);
     }
 
     private void Update()

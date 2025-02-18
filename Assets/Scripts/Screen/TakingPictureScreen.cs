@@ -36,7 +36,6 @@ public class TakingPictureScreen : UIScreen
 
     [Header("Shutter Effect")]
     [SerializeField] Image shutterPanel;
-    [SerializeField] AudioClip shutterAudioClip;
 
     readonly string folderPath = "Screenshots";
 
@@ -48,6 +47,8 @@ public class TakingPictureScreen : UIScreen
     private List<Inspectable> currentInspectables;
 
     private float lastSuccessfullPonder;
+
+    private Texture2D lastTakenScreenshot;
 
     public override bool IsOverlay => false;
     public override void Init()
@@ -248,22 +249,21 @@ public class TakingPictureScreen : UIScreen
         cameraDisplayOverlay.SetActive(false);
         zoomText.gameObject.SetActive(false);
 
-        Texture2D miniature = TakeScreenshot(Camera.main, (int)mask.rectTransform.rect.width, (int)mask.rectTransform.rect.height, 2, true, false);
+        Texture2D miniature = TakeScreenshot(Camera.main, (int)mask.rectTransform.rect.width, (int)mask.rectTransform.rect.height, 2, true);
         
         cameraDisplayOverlay.SetActive(true);
         zoomText.gameObject.SetActive(true);
         
         polaroidController.PictureFrame.texture = miniature;
-        TakeScreenshot(polaroidController.PolaroidCamera, (int)polaroidController.Size.x, (int)polaroidController.Size.y,2 ,false, true);
+        lastTakenScreenshot = TakeScreenshot(polaroidController.PolaroidCamera, (int)polaroidController.Size.x, (int)polaroidController.Size.y,2 ,false);
 
         StartCoroutine(Utilities.ShutterEffect(shutterPanel, 0.5f, 1, 0));
 
-        // TODO: Mejorar manejo de audio
-        GameManager.Instance.GetComponent<AudioSource>().PlayOneShot(shutterAudioClip);
+        AudioManager.Instance.PlaySound(SoundList.Shutter);
     }
-    private Texture2D TakeScreenshot(Camera camera, int width, int height, int scale = 2, bool crop=true, bool saveToDisk=false)
+    private Texture2D TakeScreenshot(Camera camera, int width, int height, int scale = 2, bool crop=true)
     {
-        if (saveToDisk && !Directory.Exists(folderPath))
+        if (!Directory.Exists(folderPath))
              Directory.CreateDirectory(folderPath);
 
         // Tomo un screenshot con las dimensiones del canvas
@@ -290,21 +290,21 @@ public class TakingPictureScreen : UIScreen
 
             screenshot = croppedScreenshot;
         }
-        
-        if (saveToDisk)
-        {
-            byte[] bytes = screenshot.EncodeToPNG();
-            string screenshotName = $"{Directory.GetCurrentDirectory()}/{folderPath}/Screenshot_ {DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss")}.png";
-            File.WriteAllBytes(screenshotName, bytes);
-
-            Debug.Log($"Screenshot guardado en: {screenshotName}");
-        }
 
         camera.targetTexture = null;
         RenderTexture.active = null;
         Destroy(rt);
 
         return screenshot;
+    }
+
+    public void SaveLastTakenPicture()
+    {
+        byte[] bytes = lastTakenScreenshot.EncodeToPNG();
+        string screenshotName = $"{Directory.GetCurrentDirectory()}/{folderPath}/Screenshot_ {DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss")}.png";
+        File.WriteAllBytes(screenshotName, bytes);
+
+        Debug.Log($"Screenshot guardado en: {screenshotName}");
     }
 
     public void CopyInspectablesToFrame()
