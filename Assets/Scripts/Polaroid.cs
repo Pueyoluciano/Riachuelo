@@ -1,4 +1,3 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -7,23 +6,14 @@ using UnityEngine.UI;
 
 public class Polaroid : MonoBehaviour
 {
-    [SerializeField] Camera polaroidCamera;
-    [SerializeField] RectTransform whiteFrameRectTransform;
-    [SerializeField] CanvasScaler canvas;
-
+    [Header("Picture")]
     [SerializeField] RawImage pictureFrame;
-    [SerializeField] RectTransform oldTVMaskRectTransform;
 
-    [Header("polaroid Info")]
+    [Header("Texts")]
     [SerializeField] TextMeshProUGUI title;
     [SerializeField] TextMeshProUGUI subtitle;
 
-    public Camera PolaroidCamera { get => polaroidCamera;}
-    // public RawImage Image { get => image; set => image = value; }
-    public Vector2 Size { get => canvas.referenceResolution; }
-    public string Title { get => title.text; set => title.text = value; }
-    public string Subtitle { get => subtitle.text; set => subtitle.text = value; }
-    public RectTransform WhiteFrameRectTransform { get => whiteFrameRectTransform; }
-    public RawImage PictureFrame { get => pictureFrame; }
-    public RectTransform OldTVMaskRectTransform { get => oldTVMaskRectTransform; }
+    public RawImage PictureFrame { get => pictureFrame; set => pictureFrame = value; }
+    public TextMeshProUGUI Title { get => title; set => title = value; }
+    public TextMeshProUGUI Subtitle { get => subtitle; set => subtitle = value; }
 }

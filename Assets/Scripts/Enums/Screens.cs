@@ -4,6 +4,7 @@ public enum Screens
     PreviousScreen,
     Perspective,
     TakingPicture,
+    ConfirmPicture,
     Logbook,
     Gallery
 }

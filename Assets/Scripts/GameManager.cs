@@ -13,8 +13,12 @@ public class GameManager : MonoBehaviour
     [Header("UI Screens")]
     [SerializeField] PerspectiveScreen perspectiveScreen;
     [SerializeField] TakingPictureScreen takingPictureScreen;
+    [SerializeField] ConfirmPictureScreen confirmPictureScreen;
     [SerializeField] LogbookScreen logbookScreen;
     [SerializeField] GalleryScreen galleryScreen;
+
+    [Header("Polaroid Controller")]
+    [SerializeField] PolaroidController polaroidController;
 
     [Header("Messages Controller")]
     [SerializeField] MessagesController messagesController;
@@ -24,6 +28,7 @@ public class GameManager : MonoBehaviour
 
     [Header("Conversations Manager")]
     [SerializeField] ConversationManager conversationManger;
+
 
 
     Screens currentScreen;
@@ -37,9 +42,11 @@ public class GameManager : MonoBehaviour
     public TakingPictureScreen TakingPictureScreen { get => takingPictureScreen; }
     public LogbookScreen LogbookScreen { get => logbookScreen; set => logbookScreen = value; }
     public GalleryScreen GalleryScreen { get => galleryScreen; set => galleryScreen = value; }
+    public PolaroidController PolaroidController { get => polaroidController; }
     public ConversationManager ConversationManger { get => conversationManger; }
     public ActionsController ActionsController { get => actionsController; }
     public MessagesController MessagesController { get => messagesController; }
+    public ConfirmPictureScreen ConfirmPictureScreen { get => confirmPictureScreen; }
 
     private void Awake()
     {
@@ -59,6 +66,7 @@ public class GameManager : MonoBehaviour
         {
             { Screens.Perspective, perspectiveScreen },
             { Screens.TakingPicture, takingPictureScreen },
+            { Screens.ConfirmPicture, confirmPictureScreen },
             { Screens.Logbook, logbookScreen },
             { Screens.Gallery, galleryScreen },
         };

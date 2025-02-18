@@ -38,10 +38,9 @@ public class TakingPictureScreen : UIScreen
     [SerializeField] Image shutterPanel;
     [SerializeField] AudioClip shutterAudioClip;
 
-    [Header("Polaroid")]
-    [SerializeField] Polaroid polaroidCanvas;
-
     readonly string folderPath = "Screenshots";
+
+    private PolaroidController polaroidController;
 
     // The copied temporal inspectables.
     // This is populated when entering to this screen and
@@ -54,7 +53,8 @@ public class TakingPictureScreen : UIScreen
     public override void Init()
     {
         UpdateFrameScale();
-        polaroidCanvas.PictureFrame.color = Color.white;
+        polaroidController = GameManager.Instance.PolaroidController;
+        polaroidController.PictureFrame.color = Color.white;
         currentInspectables = new List<Inspectable>();
         lastSuccessfullPonder = -1;
     }
@@ -91,9 +91,9 @@ public class TakingPictureScreen : UIScreen
 
         if (Input.GetKeyDown(KeyCode.P))
         {
-            TakePolaroidScreenshot();
-
             GameManager.Instance.ActionsController.TakePicture.Use();
+            TakePolaroidScreenshot();
+            NextScreen = Screens.ConfirmPicture;
         }
 
         if (Input.GetKeyDown(KeyCode.T))
@@ -242,8 +242,8 @@ public class TakingPictureScreen : UIScreen
 
     private void TakePolaroidScreenshot()
     {
-        polaroidCanvas.Title = GameManager.Instance.PerspectiveScreen.GetCurrentLocation.LocationName;
-        polaroidCanvas.Subtitle = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
+        polaroidController.Title = GameManager.Instance.PerspectiveScreen.GetCurrentLocation.LocationName;
+        polaroidController.Subtitle = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
 
         cameraDisplayOverlay.SetActive(false);
         zoomText.gameObject.SetActive(false);
@@ -253,8 +253,8 @@ public class TakingPictureScreen : UIScreen
         cameraDisplayOverlay.SetActive(true);
         zoomText.gameObject.SetActive(true);
         
-        polaroidCanvas.PictureFrame.texture = miniature;
-        TakeScreenshot(polaroidCanvas.PolaroidCamera, (int)polaroidCanvas.Size.x, (int)polaroidCanvas.Size.y,2 ,false, true);
+        polaroidController.PictureFrame.texture = miniature;
+        TakeScreenshot(polaroidController.PolaroidCamera, (int)polaroidController.Size.x, (int)polaroidController.Size.y,2 ,false, true);
 
         StartCoroutine(Utilities.ShutterEffect(shutterPanel, 0.5f, 1, 0));
 
