@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: efdc33060a9fc164e957b67874ec87fd, type: 3}
+  m_Name: ConversationDatabase
+  m_EditorClassIdentifier: 
+  Nothing_Interesting: {fileID: 11400000, guid: 96a2c5ff94850b84aab06b50fed3ccdf, type: 2}
+  Bad_Picture: {fileID: 11400000, guid: 7651721e01650b249a898f6cb7fc3070, type: 2}
+  Repited_Picture: {fileID: 11400000, guid: 88abb4a299684ae45a47c2d5606e0bc8, type: 2}
+  POI_Too_Many: {fileID: 11400000, guid: 6fd09b3c80184c844a6080c5bef71c04, type: 2}
+  POI_Out_Of_Bounds: {fileID: 11400000, guid: 9814086f2499f414c938b19d41e35808, type: 2}
+  POI_Too_Small: {fileID: 11400000, guid: 1b7361d8de0f4874b83e34e39176b3fd, type: 2}
+  POI_Too_Big: {fileID: 11400000, guid: 4b4c4484b4d455f458c5c36c54ddfa3e, type: 2}

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using static MiniMap;
 
-[CreateAssetMenu(fileName = "NewConversationData", menuName = "ScriptableObjects/ConversationData", order = 1)]
+[CreateAssetMenu(fileName = "NewConversationData", menuName = "ScriptableObjects/ConversationData", order = 2)]
 public class ConversationData : ScriptableObject
 {
     [Serializable]

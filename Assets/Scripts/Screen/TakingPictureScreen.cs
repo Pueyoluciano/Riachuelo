@@ -5,7 +5,6 @@ using System.IO;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using static Unity.VisualScripting.Metadata;
 
 public class TakingPictureScreen : UIScreen
 {
@@ -37,27 +36,48 @@ public class TakingPictureScreen : UIScreen
     [Header("Shutter Effect")]
     [SerializeField] Image shutterPanel;
 
+    [Header("Picture Validation")]
+    [SerializeField] RectTransform limitArea;
+    [SerializeField] RectTransform minArea;
+    [SerializeField] RectTransform maxArea;
+
     readonly string folderPath = "Screenshots";
 
     private PolaroidController polaroidController;
+    private ConversationManager conversationManager;
 
-    // The copied temporal inspectables.
+    // The copied temporal Points of interest.
     // This is populated when entering to this screen and
     // wiped out when leaving.
-    private List<Inspectable> currentInspectables;
+    private List<PointOfInterest> currentPointsOfInterest;
 
     private float lastSuccessfullPonder;
 
+    // Picture
     private Texture2D lastTakenScreenshot;
+    private ConversationData lastTakenScreenshotData;
+    bool isLastTakenScreenshotValid;
 
     public override bool IsOverlay => false;
+
+    public ConversationData LastTakenScreenshotData { get => lastTakenScreenshotData; }
+    public bool IsLastTakenScreenshotValid { get => isLastTakenScreenshotValid; }
+
     public override void Init()
     {
         UpdateFrameScale();
         polaroidController = GameManager.Instance.PolaroidController;
         polaroidController.PictureFrame.color = Color.white;
-        currentInspectables = new List<Inspectable>();
+        currentPointsOfInterest = new List<PointOfInterest>();
         lastSuccessfullPonder = -1;
+
+        conversationManager = GameManager.Instance.ConversationManger;
+
+        // Only show inspectables in editor Mode
+
+        limitArea.gameObject.GetComponent<Image>().enabled = GameManager.Instance.visualDebugEnabled;
+        minArea.gameObject.GetComponent<Image>().enabled = GameManager.Instance.visualDebugEnabled;
+        maxArea.gameObject.GetComponent<Image>().enabled = GameManager.Instance.visualDebugEnabled;
     }
 
     public override void OnEnter(bool resetState)
@@ -65,7 +85,7 @@ public class TakingPictureScreen : UIScreen
         base.OnEnter(resetState);
         pictureFrame.sprite = GameManager.Instance.PerspectiveScreen.GetCurrentLocation.GetPerspective();
 
-        CopyInspectablesToFrame();
+        CopyPointsOfInterestToFrame();
 
         if (resetState)
         {
@@ -82,7 +102,7 @@ public class TakingPictureScreen : UIScreen
     {
         base.OnExit(isNextScreenOverlay);
 
-        DeleteInspectablesFromFrame();
+        DeletePointsOfInterestFromFrame();
     }
 
     public override void GetInput()
@@ -125,16 +145,16 @@ public class TakingPictureScreen : UIScreen
             lastSuccessfullPonder != -1 && !Utilities.CheckCooldown(ponderingCooldown, lastSuccessfullPonder))
             return;
 
-        foreach (var inspectable in currentInspectables)
+        foreach (var pointOfInterest in currentPointsOfInterest)
         {
-            if(IsOverlapping(inspectable.GetComponent<RectTransform>(), PonderingPoint))
+            if(IsOverlapping(pointOfInterest.GetComponent<RectTransform>(), PonderingPoint))
             {
-                UsePonderAction(inspectable.ConversationTrigger.conversation);
-                break;
+                UsePonderAction(pointOfInterest.PonderData);
+                return;
             }
         }
 
-        UsePonderAction(Conversations.Nothing_Interesting);
+        UsePonderAction(conversationManager.conversation.Nothing_Interesting);
     }
 
     private bool IsOverlapping(RectTransform rectA, RectTransform rectB)
@@ -142,6 +162,17 @@ public class TakingPictureScreen : UIScreen
         Rect rect1 = GetCanvasRect(rectA);
         Rect rect2 = GetCanvasRect(rectB);
         return rect1.Overlaps(rect2);
+    }
+
+    private bool IsContained(RectTransform containerRectTransform, RectTransform contentRectTransform)
+    {
+        Rect container = GetCanvasRect(containerRectTransform);
+        Rect content = GetCanvasRect(contentRectTransform);
+
+        return container.Contains(new Vector2(content.xMin, content.yMin)) &&
+        container.Contains(new Vector2(content.xMax, content.yMin)) &&
+        container.Contains(new Vector2(content.xMin, content.yMax)) &&
+        container.Contains(new Vector2(content.xMax, content.yMax));
     }
     
     private Rect GetCanvasRect(RectTransform rectTransform)
@@ -157,9 +188,9 @@ public class TakingPictureScreen : UIScreen
         return new Rect(min.x, min.y, max.x - min.x, max.y - min.y);   
     }
 
-    private void UsePonderAction(Conversations conversation)
+    private void UsePonderAction(ConversationData conversationData)
     {
-        MessagesController.OnNewConversation?.Invoke(conversation);
+        MessagesController.OnNewConversation?.Invoke(conversationData);
         GameManager.Instance.ActionsController.Ponder.Use();
         GameManager.Instance.ActionsController.Ponder.StartCooldown(ponderingCooldown);
         lastSuccessfullPonder = Time.time;
@@ -241,6 +272,72 @@ public class TakingPictureScreen : UIScreen
         pictureFrame.rectTransform.anchoredPosition = newPosition;
     }
 
+    private void ValidatePicture()
+    {
+        int count = 0;
+        foreach (var pointOfInterest in currentPointsOfInterest)
+        {
+            
+            // TODO: Esta logica hay que revisarla mas adelante.
+            if(count > 1) // Too many pois.
+            {
+                lastTakenScreenshotData = conversationManager.conversation.POI_Too_Many;
+                isLastTakenScreenshotValid = false;
+                return;
+            }
+
+            RectTransform POIRectTransform = pointOfInterest.GetComponent<RectTransform>();
+            if (IsOverlapping(POIRectTransform, limitArea))
+            {
+                count++;
+
+                if (!IsContained(limitArea, POIRectTransform)) // POI not inside the accepted limit.
+                {
+                    lastTakenScreenshotData = conversationManager.conversation.POI_Out_Of_Bounds;
+                    isLastTakenScreenshotValid = false;
+                    return;
+                }
+
+                Vector3 minAreaOriginalPosition = minArea.position;
+                minArea.position = POIRectTransform.position;
+
+                bool isPOITooSmall = IsContained(minArea, POIRectTransform);
+
+                minArea.position = minAreaOriginalPosition;
+
+                if (isPOITooSmall) // POI is smaller than the minimum 
+                {
+                    lastTakenScreenshotData = conversationManager.conversation.POI_Too_Small;
+                    isLastTakenScreenshotValid = false;
+                    return;
+                }
+
+                Vector3 maxAreaOriginalPosition = maxArea.position;
+                maxArea.position = POIRectTransform.position;
+
+                bool isPOITooBig = !IsContained(maxArea, POIRectTransform);
+
+                maxArea.position = maxAreaOriginalPosition;
+
+                if (isPOITooBig) // POI is bigger than the maximum 
+                {
+                    lastTakenScreenshotData = conversationManager.conversation.POI_Too_Big;
+                    isLastTakenScreenshotValid = false;
+                    return;
+                }
+
+
+                // Valid Picture.
+                lastTakenScreenshotData = pointOfInterest.PictureData;
+                isLastTakenScreenshotValid = true;
+                return;
+            }
+        }
+
+        lastTakenScreenshotData = conversationManager.conversation.Nothing_Interesting;
+        isLastTakenScreenshotValid = false;
+    }
+
     private void TakePolaroidScreenshot()
     {
         polaroidController.Title = GameManager.Instance.PerspectiveScreen.GetCurrentLocation.LocationName;
@@ -258,6 +355,8 @@ public class TakingPictureScreen : UIScreen
         lastTakenScreenshot = TakeScreenshot(polaroidController.PolaroidCamera, (int)polaroidController.Size.x, (int)polaroidController.Size.y,2 ,false);
 
         StartCoroutine(Utilities.ShutterEffect(shutterPanel, 0.5f, 1, 0));
+
+        ValidatePicture();
 
         AudioManager.Instance.PlaySound(SoundList.Shutter);
     }
@@ -307,22 +406,22 @@ public class TakingPictureScreen : UIScreen
         Debug.Log($"Screenshot guardado en: {screenshotName}");
     }
 
-    public void CopyInspectablesToFrame()
+    public void CopyPointsOfInterestToFrame()
     {
         Location currentLocation = GameManager.Instance.PerspectiveScreen.GetCurrentLocation;
-        Inspectable[] inspectables = currentLocation.Inspectables;
+        PointOfInterest[] pointOfInterestList = currentLocation.PointOfInterestList;
 
-        foreach (var inspectable in inspectables)
+        foreach (var pointOfInterest in pointOfInterestList)
         {
-            Inspectable newInspectable = Instantiate(inspectable);
+            PointOfInterest newPointOfInterest = Instantiate(pointOfInterest);
 
-            currentInspectables.Add(newInspectable);
+            currentPointsOfInterest.Add(newPointOfInterest);
 
-            newInspectable.transform.SetParent(pictureFrame.transform, false);
+            newPointOfInterest.transform.SetParent(pictureFrame.transform, false);
 
             RectTransform currentLocationRectTransform = currentLocation.GetComponent<RectTransform>();
-            RectTransform inspectableRectTransform = inspectable.GetComponent<RectTransform>();
-            RectTransform newInspectableRectTransform = newInspectable.GetComponent<RectTransform>();
+            RectTransform poiRectTransform = pointOfInterest.GetComponent<RectTransform>();
+            RectTransform newPoiRectTransform = newPointOfInterest.GetComponent<RectTransform>();
             
             // Obtener el factor de escala entre los contenedores
             Vector2 scaleFactor = new Vector2(
@@ -331,25 +430,25 @@ public class TakingPictureScreen : UIScreen
             );
 
             // Ajustar la posición relativa
-            Vector2 relativePos = inspectableRectTransform.anchoredPosition;
-            newInspectableRectTransform.anchoredPosition = new Vector2(relativePos.x * scaleFactor.x, relativePos.y * scaleFactor.y);
+            Vector2 relativePos = poiRectTransform.anchoredPosition;
+            newPoiRectTransform.anchoredPosition = new Vector2(relativePos.x * scaleFactor.x, relativePos.y * scaleFactor.y);
 
             // Ajustar la escala relativa
-            newInspectableRectTransform.localScale = new Vector3(
-                newInspectableRectTransform.localScale.x * scaleFactor.x,
-                newInspectableRectTransform.localScale.y * scaleFactor.y,
+            newPoiRectTransform.localScale = new Vector3(
+                newPoiRectTransform.localScale.x * scaleFactor.x,
+                newPoiRectTransform.localScale.y * scaleFactor.y,
                 1f
             );
         }
     }
 
-    private void DeleteInspectablesFromFrame()
+    private void DeletePointsOfInterestFromFrame()
     {       
-        for ( int i = 0; i < currentInspectables.Count; i++)
+        for ( int i = 0; i < currentPointsOfInterest.Count; i++)
         {
-            Destroy(currentInspectables[i]);
+            Destroy(currentPointsOfInterest[i].gameObject);
         }
 
-        currentInspectables.Clear();
+        currentPointsOfInterest.Clear();
     }
 }

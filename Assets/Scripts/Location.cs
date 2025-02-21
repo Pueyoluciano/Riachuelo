@@ -17,9 +17,9 @@ public class Location : MonoBehaviour
     Image perspective;
     Dictionary<KeyCode, Location> locationByKeyCode;
 
-    private Inspectable[] inspectables;
+    private PointOfInterest[] pointOfInterestList;
     public string LocationName { get => locationName; }
-    public Inspectable[] Inspectables { get => inspectables; }
+    public PointOfInterest[] PointOfInterestList { get => pointOfInterestList; }
 
     private void Awake()
     {
@@ -32,7 +32,7 @@ public class Location : MonoBehaviour
             { KeyCode.RightArrow, rightLocation}
         };
 
-        inspectables = gameObject.GetComponentsInChildren<Inspectable>();
+        pointOfInterestList = gameObject.GetComponentsInChildren<PointOfInterest>();
     }
 
     public Location GetLocation(KeyCode keyCode)

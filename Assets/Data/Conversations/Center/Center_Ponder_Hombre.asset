@@ -10,9 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 004a96a1ad32d534084889913e6cb37e, type: 3}
-  m_Name: South_Biblio1
+  m_Name: Center_Ponder_Hombre
   m_EditorClassIdentifier: 
   messagesList:
-  - name: Pedro
+  - name: Carlos
     nameColor: {r: 1, g: 0, b: 0, a: 1}
-    text: La biblioteca nacional.
+    text: Un flaco corriendo.
+  - name: Carlos
+    nameColor: {r: 1, g: 0, b: 0, a: 1}
+    text: Que banana.

@@ -29,6 +29,9 @@ public class GameManager : MonoBehaviour
     [Header("Conversations Manager")]
     [SerializeField] ConversationManager conversationManger;
 
+    [Header("Visual Debug Mode")]
+    public bool visualDebugEnabled = false;
+
     Screens currentScreen;
     Screens previousScreen;
     Dictionary<Screens, UIScreen> UIScreens;

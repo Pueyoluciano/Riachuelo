@@ -9,12 +9,9 @@ public class ConfirmPictureScreen : UIScreen
 
     public override bool IsOverlay => true;
 
-    private AudioSource audioSource;
-
     protected override void Awake()
     {
         base.Awake();
-        audioSource = GetComponent<AudioSource>();
     }
 
     public override void GetInput()
@@ -45,6 +42,7 @@ public class ConfirmPictureScreen : UIScreen
         polaroid.Title.text = GameManager.Instance.PolaroidController.Title;
         polaroid.Subtitle.text = GameManager.Instance.PolaroidController.Subtitle;
 
+        MessagesController.OnNewConversation?.Invoke(GameManager.Instance.TakingPictureScreen.LastTakenScreenshotData);
     }
 
     private void SavePicture() 

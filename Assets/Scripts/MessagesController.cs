@@ -34,7 +34,7 @@ public class MessagesController : MonoBehaviour
     private bool ShoudUpdateBlink { get => Time.time - blinkingElapsedTime >= blinkingTime; }
     public bool StartedConversation { get => startedConversation; }
 
-    public static Action<Conversations> OnNewConversation;
+    public static Action<ConversationData> OnNewConversation;
 
     private void Awake()
     {
@@ -101,13 +101,13 @@ public class MessagesController : MonoBehaviour
         }
     }
 
-    private void OnNewConversationHandler(Conversations conversationID)
+    private void OnNewConversationHandler(ConversationData conversationData)
     {
         if (startedConversation)
             return;
 
         ResetConversation();
-        StartCoroutine(TypeText(GameManager.Instance.ConversationManger.GetConversationData(conversationID)));
+        StartCoroutine(TypeText(conversationData));
     }
 
     private string coloredString(Color color, string name)
