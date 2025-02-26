@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "NewConversation", menuName = "ScriptableObjects/Conversation", order = 1)]
+[CreateAssetMenu(fileName = "NewConversationDatabase", menuName = "ScriptableObjects/Conversation/ConversationDatabase", order = 1)]
 public class Conversation : ScriptableObject
 {
     [Header("Picture")]

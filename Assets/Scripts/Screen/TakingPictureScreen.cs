@@ -15,6 +15,9 @@ public class TakingPictureScreen : UIScreen
     [Header("Looking Around")]
     [SerializeField] float movementSpeed;
 
+    [Header("Indicator")]
+    [SerializeField] Indicator indicator;
+
     [Header("Ponder")]
     [SerializeField] RectTransform PonderingPoint;
     [SerializeField] float ponderingCooldown;
@@ -45,6 +48,7 @@ public class TakingPictureScreen : UIScreen
 
     private PolaroidController polaroidController;
     private ConversationManager conversationManager;
+    private AudioManager audioManager;
 
     // The copied temporal Points of interest.
     // This is populated when entering to this screen and
@@ -57,6 +61,10 @@ public class TakingPictureScreen : UIScreen
     private Texture2D lastTakenScreenshot;
     private ConversationData lastTakenScreenshotData;
     bool isLastTakenScreenshotValid;
+
+    // Update Indicator frequency
+    int updateInspectorFrequency = 5;
+    int updateInspectorCounter;
 
     public override bool IsOverlay => false;
 
@@ -71,7 +79,10 @@ public class TakingPictureScreen : UIScreen
         currentPointsOfInterest = new List<PointOfInterest>();
         lastSuccessfullPonder = -1;
 
+        updateInspectorCounter = 0;
+
         conversationManager = GameManager.Instance.ConversationManger;
+        audioManager = GameManager.Instance.AudioManager;
 
         // Only show inspectables in editor Mode
 
@@ -109,6 +120,7 @@ public class TakingPictureScreen : UIScreen
     {
         Zoom();
         LookAround();
+        UpdateIndicator();
 
         if (Input.GetKeyDown(KeyCode.P))
         {
@@ -133,7 +145,7 @@ public class TakingPictureScreen : UIScreen
         {
             NextScreen = Screens.Perspective;
         }
-        
+
         if (Input.GetKeyDown(KeyCode.I))
         {
             Ponder();
@@ -141,13 +153,13 @@ public class TakingPictureScreen : UIScreen
     }
     private void Ponder()
     {
-        if (GameManager.Instance.MessagesController.StartedConversation || 
+        if (GameManager.Instance.MessagesController.StartedConversation ||
             lastSuccessfullPonder != -1 && !Utilities.CheckCooldown(ponderingCooldown, lastSuccessfullPonder))
             return;
 
         foreach (var pointOfInterest in currentPointsOfInterest)
         {
-            if(IsOverlapping(pointOfInterest.GetComponent<RectTransform>(), PonderingPoint))
+            if (IsOverlapping(pointOfInterest.GetComponent<RectTransform>(), PonderingPoint))
             {
                 UsePonderAction(pointOfInterest.PonderData);
                 return;
@@ -158,7 +170,7 @@ public class TakingPictureScreen : UIScreen
     }
 
     private bool IsOverlapping(RectTransform rectA, RectTransform rectB)
-    {        
+    {
         Rect rect1 = GetCanvasRect(rectA);
         Rect rect2 = GetCanvasRect(rectB);
         return rect1.Overlaps(rect2);
@@ -174,7 +186,7 @@ public class TakingPictureScreen : UIScreen
         container.Contains(new Vector2(content.xMin, content.yMax)) &&
         container.Contains(new Vector2(content.xMax, content.yMax));
     }
-    
+
     private Rect GetCanvasRect(RectTransform rectTransform)
     {
         Vector3[] corners = new Vector3[4];
@@ -185,7 +197,7 @@ public class TakingPictureScreen : UIScreen
         Vector2 max = RectTransformUtility.WorldToScreenPoint(cam, corners[2]); // Esquina superior derecha
 
         // Crear el rect en coordenadas de pantalla
-        return new Rect(min.x, min.y, max.x - min.x, max.y - min.y);   
+        return new Rect(min.x, min.y, max.x - min.x, max.y - min.y);
     }
 
     private void UsePonderAction(ConversationData conversationData)
@@ -229,13 +241,13 @@ public class TakingPictureScreen : UIScreen
 
         // diff from object pivot to desired pivot/origin
         Vector3 pivotDelta = pictureFrame.transform.localPosition - new Vector3(center.pivot.x, center.pivot.y, 0);
-        
+
         Vector3 scaleFactor = new Vector3(
             frameScale / pictureFrame.transform.localScale.x,
             frameScale / pictureFrame.transform.localScale.y,
             frameScale / pictureFrame.transform.localScale.z);
         pivotDelta.Scale(scaleFactor);
-        
+
         pictureFrame.transform.localPosition = new Vector3(center.pivot.x, center.pivot.y, 0) + pivotDelta;
         UpdateFrameScale();
     }
@@ -264,7 +276,7 @@ public class TakingPictureScreen : UIScreen
         newPosition = Wobble(newPosition);
 
         Vector2 min = -(imageSize - maskSize);
-        Vector2 max = new (0, 0);
+        Vector2 max = new(0, 0);
 
         newPosition.x = Mathf.Clamp(newPosition.x, min.x, max.x);
         newPosition.y = Mathf.Clamp(newPosition.y, min.y, max.y);
@@ -272,6 +284,63 @@ public class TakingPictureScreen : UIScreen
         pictureFrame.rectTransform.anchoredPosition = newPosition;
     }
 
+    private void UpdateIndicator()
+    {
+        updateInspectorCounter++;
+
+        if (updateInspectorCounter % updateInspectorFrequency != 0)
+            return;
+
+        updateInspectorCounter = 0;
+
+        foreach (var pointOfInterest in currentPointsOfInterest)
+        {
+            RectTransform POIRectTransform = pointOfInterest.GetComponent<RectTransform>();
+            if (IsOverlapping(POIRectTransform, PonderingPoint))
+            {
+                if (IsPOIInsideLimits(POIRectTransform) && !IsPOITooSmall(POIRectTransform) && !IsPOITooBig(POIRectTransform))
+                {
+                    indicator.SetState(Indicator.State.Full);
+                }
+                else
+                {
+                    indicator.SetState(Indicator.State.Loading);
+                }
+
+                return;
+            }
+        }
+
+        indicator.SetState(Indicator.State.Off);
+    }
+
+    private bool IsPOIInsideLimits(RectTransform POIRectTransform)
+    {
+        return IsContained(limitArea, POIRectTransform);
+    }
+    private bool IsPOITooSmall(RectTransform POIRectTransform)
+    {
+        Vector3 minAreaOriginalPosition = minArea.position;
+        minArea.position = POIRectTransform.position;
+
+        bool isPOITooSmall = IsContained(minArea, POIRectTransform);
+
+        minArea.position = minAreaOriginalPosition;
+
+        return isPOITooSmall;
+    }
+
+    private bool IsPOITooBig(RectTransform POIRectTransform)
+    {
+        Vector3 maxAreaOriginalPosition = maxArea.position;
+        maxArea.position = POIRectTransform.position;
+
+        bool isPOITooBig = !IsContained(maxArea, POIRectTransform);
+
+        maxArea.position = maxAreaOriginalPosition;
+
+        return isPOITooBig;
+    }
     private void ValidatePicture()
     {
         int count = 0;
@@ -291,35 +360,20 @@ public class TakingPictureScreen : UIScreen
             {
                 count++;
 
-                if (!IsContained(limitArea, POIRectTransform)) // POI not inside the accepted limit.
+                if (!IsPOIInsideLimits(POIRectTransform)) // POI exceeds the accepted limit.
                 {
                     lastTakenScreenshotData = conversationManager.conversation.POI_Out_Of_Bounds;
                     isLastTakenScreenshotValid = false;
                     return;
                 }
-
-                Vector3 minAreaOriginalPosition = minArea.position;
-                minArea.position = POIRectTransform.position;
-
-                bool isPOITooSmall = IsContained(minArea, POIRectTransform);
-
-                minArea.position = minAreaOriginalPosition;
-
-                if (isPOITooSmall) // POI is smaller than the minimum 
+                if (IsPOITooSmall(POIRectTransform)) // POI is smaller than the minimum 
                 {
                     lastTakenScreenshotData = conversationManager.conversation.POI_Too_Small;
                     isLastTakenScreenshotValid = false;
                     return;
                 }
 
-                Vector3 maxAreaOriginalPosition = maxArea.position;
-                maxArea.position = POIRectTransform.position;
-
-                bool isPOITooBig = !IsContained(maxArea, POIRectTransform);
-
-                maxArea.position = maxAreaOriginalPosition;
-
-                if (isPOITooBig) // POI is bigger than the maximum 
+                if (IsPOITooBig(POIRectTransform)) // POI is bigger than the maximum 
                 {
                     lastTakenScreenshotData = conversationManager.conversation.POI_Too_Big;
                     isLastTakenScreenshotValid = false;
@@ -345,12 +399,14 @@ public class TakingPictureScreen : UIScreen
 
         cameraDisplayOverlay.SetActive(false);
         zoomText.gameObject.SetActive(false);
+        indicator.gameObject.SetActive(false);
 
         Texture2D miniature = TakeScreenshot(Camera.main, (int)mask.rectTransform.rect.width, (int)mask.rectTransform.rect.height, 2, true);
         
         cameraDisplayOverlay.SetActive(true);
         zoomText.gameObject.SetActive(true);
-        
+        indicator.gameObject.SetActive(true);
+
         polaroidController.PictureFrame.texture = miniature;
         lastTakenScreenshot = TakeScreenshot(polaroidController.PolaroidCamera, (int)polaroidController.Size.x, (int)polaroidController.Size.y,2 ,false);
 
@@ -358,7 +414,7 @@ public class TakingPictureScreen : UIScreen
 
         ValidatePicture();
 
-        AudioManager.Instance.PlaySound(SoundList.Shutter);
+        audioManager.PlaySound(audioManager.audios.Shutter);
     }
     private Texture2D TakeScreenshot(Camera camera, int width, int height, int scale = 2, bool crop=true)
     {
@@ -441,7 +497,6 @@ public class TakingPictureScreen : UIScreen
             );
         }
     }
-
     private void DeletePointsOfInterestFromFrame()
     {       
         for ( int i = 0; i < currentPointsOfInterest.Count; i++)

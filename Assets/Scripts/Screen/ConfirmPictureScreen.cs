@@ -9,6 +9,8 @@ public class ConfirmPictureScreen : UIScreen
 
     public override bool IsOverlay => true;
 
+    private AudioManager audioManager;
+
     protected override void Awake()
     {
         base.Awake();
@@ -31,7 +33,7 @@ public class ConfirmPictureScreen : UIScreen
 
     public override void Init()
     {
-        
+        audioManager = GameManager.Instance.AudioManager;
     }
 
     public override void OnEnter(bool resetState)
@@ -48,11 +50,11 @@ public class ConfirmPictureScreen : UIScreen
     private void SavePicture() 
     {
         GameManager.Instance.TakingPictureScreen.SaveLastTakenPicture();
-        AudioManager.Instance.PlaySound(SoundList.SavePicture);
+        audioManager.PlaySound(audioManager.audios.SavePicture);
     }
 
     private void DiscardPicture()
     {
-        AudioManager.Instance.PlaySound(SoundList.DiscardPicture);
+        audioManager.PlaySound(audioManager.audios.DiscardPicture);
     }
 }

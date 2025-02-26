@@ -629,6 +629,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 157325035cfb92a46a4ab0d4979ed270, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  scenes: {fileID: 11400000, guid: eb3b4fcc398d37f4d9c90a6652e2fc43, type: 2}
 --- !u!4 &1232821107
 Transform:
   m_ObjectHideFlags: 0
@@ -809,6 +810,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 636812543646de9439635d5e0e5b687a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  showDebugConsoleOnBuild: 0
 --- !u!4 &1534391744
 Transform:
   m_ObjectHideFlags: 0

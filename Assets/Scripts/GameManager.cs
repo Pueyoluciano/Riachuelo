@@ -29,6 +29,9 @@ public class GameManager : MonoBehaviour
     [Header("Conversations Manager")]
     [SerializeField] ConversationManager conversationManger;
 
+    [Header("Conversations Manager")]
+    [SerializeField] AudioManager audioManager;
+
     [Header("Visual Debug Mode")]
     public bool visualDebugEnabled = false;
 
@@ -47,6 +50,7 @@ public class GameManager : MonoBehaviour
     public ConversationManager ConversationManger { get => conversationManger; }
     public ActionsController ActionsController { get => actionsController; }
     public MessagesController MessagesController { get => messagesController; }
+    public AudioManager AudioManager { get => audioManager; }
     public ConfirmPictureScreen ConfirmPictureScreen { get => confirmPictureScreen; }
 
     private void Awake()
@@ -79,7 +83,7 @@ public class GameManager : MonoBehaviour
             UIScreen.Init();
         }
 
-        AudioManager.Instance.PlaySound(SoundList.MainMenuMusic);
+        audioManager.PlaySound(audioManager.audios.LocationMusic);
     }
 
     private void Update()
